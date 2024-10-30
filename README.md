@@ -1,6 +1,6 @@
 # web-downloader
 
-实现![you-get]("https://github.com/soimort/you-get")的web封装
+实现[you-get](https://github.com/soimort/you-get)的web封装
 
 ## 前端
 
