@@ -15,20 +15,6 @@ type DownloadReq struct {
 	Proxy string
 }
 
-func generateCommand(url string, proxy string, cookiesName string) string {
-	fomat := "you-get %s%s%s -o /Temp/you-get/download"
-	var p string
-	var c string
-	if proxy != "" {
-		p = fmt.Sprintf(" -x %s", proxy)
-	}
-	if cookiesName != "" {
-		c = fmt.Sprintf(" -c %s", cookiesName)
-	}
-
-	return fmt.Sprintf(fomat, url, p, c)
-}
-
 func setupRouter() *gin.Engine {
 	// Disable Console Color
 	// gin.DisableConsoleColor()
@@ -50,7 +36,17 @@ func setupRouter() *gin.Engine {
 			c.SaveUploadedFile(file, cookiesName)
 		}
 
-		msg := exec.Command("you-get", generateCommand(req.Url, req.Proxy, cookiesName))
+		var args []string
+		args = append(args, req.Url, "-o", "/Temp/you-get/download")
+		if req.Proxy!= "" { 
+			args = append(args, "-x", req.Proxy)
+		}
+		if cookiesName!= "" {
+			args = append(args, "-c", cookiesName)
+		}
+
+		msg := exec.Command("you-get", args...)
+		log.Printf("cmd: %v", msg.Args)
 		_, err2 := msg.Output()
 		if err2 != nil {
 			fmt.Println("Error executing command:", err2)
