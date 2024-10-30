@@ -2,88 +2,61 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os/exec"
 
 	"github.com/gin-gonic/gin"
+	"github.com/thanhpk/randstr"
 )
 
-var db = make(map[string]string)
 type DownloadReq struct {
-	url		string
-	proxy	string
+	Url   string
+	Proxy string
+}
+
+func generateCommand(url string, proxy string, cookiesName string) string {
+	fomat := "you-get %s%s%s -o /Temp/you-get/download"
+	var p string
+	var c string
+	if proxy != "" {
+		p = fmt.Sprintf(" -x %s", proxy)
+	}
+	if cookiesName != "" {
+		c = fmt.Sprintf(" -c %s", cookiesName)
+	}
+
+	return fmt.Sprintf(fomat, url, p, c)
 }
 
 func setupRouter() *gin.Engine {
 	// Disable Console Color
 	// gin.DisableConsoleColor()
 	r := gin.Default()
-	
+
 	r.POST("/download", func(c *gin.Context) {
+		iflag := randstr.String(16)
 		var req DownloadReq
-		if err := c.ShouldBindJSON(&req); err!= nil {
+		if err := c.ShouldBind(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		cmd := exec.Command("touch", req.url)
-		_, err := cmd.Output()
-		if err!= nil {
-			fmt.Println("Error executing command:", err)
+		file, err1 := c.FormFile("cookies")
+		var cookiesName string
+		if err1 == nil {
+			log.Println(file.Filename)
+			cookiesName = fmt.Sprintf("/Temp/cookies/%s.txt", iflag)
+			c.SaveUploadedFile(file, cookiesName)
 		}
 
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
-
-	// Ping test
-	r.GET("/ping", func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
-	})
-
-	// Get user value
-	r.GET("/user/:name", func(c *gin.Context) {
-		user := c.Params.ByName("name")
-		value, ok := db[user]
-		if ok {
-			c.JSON(http.StatusOK, gin.H{"user": user, "value": value})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"user": user, "status": "no value"})
-		}
-	})
-
-	// Authorized group (uses gin.BasicAuth() middleware)
-	// Same than:
-	// authorized := r.Group("/")
-	// authorized.Use(gin.BasicAuth(gin.Credentials{
-	//	  "foo":  "bar",
-	//	  "manu": "123",
-	//}))
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		"foo":  "bar", // user:foo password:bar
-		"manu": "123", // user:manu password:123
-	}))
-
-	/* example curl for /admin with basicauth header
-	   Zm9vOmJhcg== is base64("foo:bar")
-
-		curl -X POST \
-	  	http://localhost:8080/admin \
-	  	-H 'authorization: Basic Zm9vOmJhcg==' \
-	  	-H 'content-type: application/json' \
-	  	-d '{"value":"bar"}'
-	*/
-	authorized.POST("admin", func(c *gin.Context) {
-		user := c.MustGet(gin.AuthUserKey).(string)
-
-		// Parse JSON
-		var json struct {
-			Value string `json:"value" binding:"required"`
+		msg := exec.Command("you-get", generateCommand(req.Url, req.Proxy, cookiesName))
+		_, err2 := msg.Output()
+		if err2 != nil {
+			fmt.Println("Error executing command:", err2)
 		}
 
-		if c.Bind(&json) == nil {
-			db[user] = json.Value
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
-		}
+		c.JSON(http.StatusOK, gin.H{"status": req.Url + iflag})
 	})
 
 	return r
