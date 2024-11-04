@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/thanhpk/randstr"
+
+	"samuel/you-get-web/tools"
 )
 
 type DownloadReq struct {
@@ -50,6 +53,7 @@ func setupRouter() *gin.Engine {
 
 		var args []string
 		args = append(args, req.Url, "-o", "/Temp/you-get/download")
+		args = append(args, "-O", iflag)
 		if req.Proxy != "" {
 			args = append(args, "-x", req.Proxy)
 		}
@@ -59,11 +63,34 @@ func setupRouter() *gin.Engine {
 
 		msg := exec.Command("you-get", args...)
 		log.Printf("cmd: %v", msg.Args)
-		_, err2 := msg.Output()
+		output, err2 := msg.Output()
+
 		if err2 != nil {
 			fmt.Println("Error executing command:", err2)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": "fail, please try again"})
+			return
 		}
 
+		suffix, err3 := tools.SplitFileSuffix(string(output))
+		if err3 != nil {
+			fmt.Println("Error cannot find the file suffix", err3)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": "fail, please try again"})
+			return
+		}
+
+		file1 := fmt.Sprintf("%s[0].%s", iflag, suffix)
+		file2 := fmt.Sprintf("%s[1].%s", iflag, suffix)
+
+		if _, err3 := os.Stat(file1); os.IsNotExist(err3) {
+			fmt.Printf("file1 %s not exist", file1)
+		} else {
+			c.File("/Temp/you-get/download/" + file1)
+		}
+		if _, err3 := os.Stat(file2); os.IsNotExist(err3) {
+			fmt.Printf("file2 %s not exist", file2)
+		} else {
+			c.File("/Temp/you-get/download/" + file2)
+		}
 		c.JSON(http.StatusOK, gin.H{"status": req.Url + iflag})
 	})
 
