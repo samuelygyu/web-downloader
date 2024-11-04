@@ -1,0 +1,65 @@
+.shape {
+    height: 0;
+    width: 0;
+    border-bottom: 30px solid black;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+  }
+
+.divContainer {
+  border-top: 500px;
+  border-bottom: 5px;
+}
+
+.proxyCheckStatus {
+  margin-left: 20px;
+  display: inline-flex;
+}
+
+/* 父容器样式 */
+.hostPortContainer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 16px;
+}
+
+/* 输入框通用样式 */
+.hostPortContainer input {
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  width: 100px;
+  text-align: center;
+}
+
+/* 专门样式：host输入框 */
+.hostPortContainer input.host {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none; /* 去掉右边框 */
+}
+
+/* 专门样式：port输入框 */
+.hostPortContainer input.port {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 冒号样式 */
+.hostPortContainer .separator {
+  font-weight: bold;
+  color: #333;
+}
+
+/* 鼠标悬停效果 */
+.hostPortContainer input:hover {
+  border-color: #888;
+}
+
+/* 输入框获得焦点时 */
+.hostPortContainer input:focus {
+  border-color: #007BFF;
+}
