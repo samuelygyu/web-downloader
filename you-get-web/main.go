@@ -44,7 +44,6 @@ func setupRouter() *gin.Engine {
 
 		file, err1 := c.FormFile("cookies")
 		var cookiesName string
-		log.Println(err1)
 		if err1 == nil {
 			log.Println(file.Filename)
 			cookiesName = fmt.Sprintf("/Temp/cookies/%s.txt", iflag)
@@ -71,20 +70,21 @@ func setupRouter() *gin.Engine {
 			return
 		}
 
-		suffix, err3 := tools.SplitFileSuffix(string(output))
+		suffix, title, err3 := tools.SplitFileSuffix(string(output))
 		if err3 != nil {
 			fmt.Println("Error cannot find the file suffix", err3)
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": "fail, please try again"})
 			return
 		}
 
-		file1 := fmt.Sprintf("%s[0].%s", iflag, suffix)
-		file2 := fmt.Sprintf("%s[1].%s", iflag, suffix)
+		file1 := fmt.Sprintf("%s[00].%s", iflag, suffix)
+		file2 := fmt.Sprintf("%s[01].%s", iflag, suffix)
 
 		if _, err3 := os.Stat(file1); os.IsNotExist(err3) {
 			fmt.Printf("file1 %s not exist", file1)
 		} else {
-			c.File("/Temp/you-get/download/" + file1)
+			c.FileAttachment("/Temp/you-get/download/" + file1, title)
+			return
 		}
 		if _, err3 := os.Stat(file2); os.IsNotExist(err3) {
 			fmt.Printf("file2 %s not exist", file2)
