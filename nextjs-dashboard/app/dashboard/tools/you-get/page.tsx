@@ -5,6 +5,7 @@ import { useState } from "react"
 import { useForm, SubmitHandler } from "react-hook-form"
 import { FcApproval, FcDisclaimer } from "react-icons/fc";
 import styles from '@/app/ui/home.module.css'
+import Link from "next/link";
 
 type DownloadForm = {
   url: string,
@@ -22,6 +23,7 @@ export default function Page() {
   const { register, handleSubmit, getValues } = useForm<DownloadForm>();
   const [status, setStatus] = useState<boolean>(false)
   const [isVisible, setIsVisible] = useState<boolean>(false)
+  const [files, setFiles] = useState<string[]>([])
 
   async function handleProxyCheck() {
     let host = getValues('proxyHost')
@@ -47,20 +49,21 @@ export default function Page() {
     const form = new FormData()
     console.log(formData.cookies)
 
-    // if (formData.cookies !== null) {
+    if (formData.cookies !== null) {
       form.append('cookies', formData.cookies[0])
-    // }
+    }
     if (formData.proxyHost && formData.proxyPort) {
       form.append('proxy', formData.proxyHost + ":" + formData.proxyPort)
     }
     form.append('url', formData.url);
 
-    axios.post('http://localhost:8080/download', form, {
+    axios.post('http://175.178.54.54:8080/parse', form, {
       headers: {
         'Content-Type':'multipart/form-data'
       }
     }).then(res => {
       console.log(res)
+      setFiles(res.data.files)
     }).catch(err => {
       console.error(err)
     })
@@ -87,8 +90,47 @@ export default function Page() {
           <input {...register("cookies")} type="file" />
           <button className="text-red">请点击上传cookies文件</button>
         </div>
-        <button className="h-10 px-6 font-semibold rounded-md bg-black text-white" type="submit">下载</button>
+        <button className="h-10 px-6 font-semibold rounded-md bg-black text-white" type="submit">解析</button>
+        <ol>
+          <Files fileList={files}/>
+        </ol>
       </form>
+    </>
+  )
+}
+
+function Files({fileList}: {fileList: string[]}) {
+  function handleClick(fileName: string) {
+    axios.post("http://175.178.54.54:8080/download", {
+        Filename: fileName
+      }, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: 'blob'
+    }).then(res => {
+      console.log(res.data)
+      const blob = res.data
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'reponse'
+      document.body.appendChild(a)
+      a.click()
+
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    })
+  }
+  return (
+    <>
+      {fileList.map(file => {
+        return (
+          <li key={file}>
+            <p>{file}</p><button  type="button" onClick={() => handleClick(file)}>下载</button>
+          </li>
+        )
+      })}
     </>
   )
 }

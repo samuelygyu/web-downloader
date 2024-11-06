@@ -15,6 +15,7 @@ export default function Page() {
       <>
         <button onClick={handleClick}>Click</button>
         <p>{state}</p>
+        <a href="/image-20241029213335791.png" download="image.png">link</a>
       </>
     )
 }
