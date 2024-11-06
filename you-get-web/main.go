@@ -14,9 +14,13 @@ import (
 	"samuel/you-get-web/tools"
 )
 
-type DownloadReq struct {
+type ParseReq struct {
 	Url   string
 	Proxy string
+}
+
+type DownloadReq struct {
+	Filename string
 }
 
 func setupRouter() *gin.Engine {
@@ -34,7 +38,7 @@ func setupRouter() *gin.Engine {
 
 	r.POST("/download", func(c *gin.Context) {
 		iflag := randstr.String(16)
-		var req DownloadReq
+		var req ParseReq 
 		req.Url = c.PostForm("url")
 		req.Proxy = c.PostForm("proxy")
 		if req.Url == "" {
@@ -79,25 +83,43 @@ func setupRouter() *gin.Engine {
 
 		file1 := fmt.Sprintf("%s[00].%s", iflag, suffix)
 		file2 := fmt.Sprintf("%s[01].%s", iflag, suffix)
-
+		file3 := fmt.Sprintf("%s.cmt.xml", title)
+		fileList := make([]string, 0)
 		if _, err3 := os.Stat(file1); os.IsNotExist(err3) {
 			fmt.Printf("file1 %s not exist", file1)
 		} else {
-			c.FileAttachment("/Temp/you-get/download/" + file1, title)
-			return
+			fileList = append(fileList, file1)
+			// c.FileAttachment("/Temp/you-get/download/" + file1, title)
 		}
 		if _, err3 := os.Stat(file2); os.IsNotExist(err3) {
 			fmt.Printf("file2 %s not exist", file2)
 		} else {
-			c.File("/Temp/you-get/download/" + file2)
+			fileList = append(fileList, file2)
+			// c.File("/Temp/you-get/download/" + file2)
 		}
-		c.JSON(http.StatusOK, gin.H{"status": req.Url + iflag})
+		if _, err4 := os.Stat(file3); os.IsNotExist(err4) {
+			fmt.Printf("file3 %s not exist", file3)
+		} else {
+			fileList = append(fileList, file3)
+			// c.File("/Temp/you-get/download/" + file2)
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "success", "files": fileList})
 	})
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
+	})
+	
+	r.POST("/download", func(c *gin.Context) {
+		var req DownloadReq
+		if c.ShouldBind(&req) != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+			return
+		}
+		
+		c.FileAttachment("/Temp/you-get/download/" + req.Filename, req.Filename)
 	})
 
 	return r
